@@ -15,237 +15,212 @@ import static org.lwjgl.system.MemoryUtil.*;
 
 public class Luces {
 
-	private long window;
-	private float cameraX = 0.0f; // posicion de la camara en el eje x
-	private float cameraY = 0.0f; // posicion de la camara en el eje y
-	private float cameraZ = -7.0f; // posicion de la camara en el eje z
-	private float cameraRotationX = 0.0f; // angulo de rotacion de la camara en el eje x
-	private float cameraRotationY = 0.0f; // angulo de rotacion de la camara en el eje x
+    // Identificador de la ventana
+    private long window;
+    // Posiciones y rotaciones de la cámara
+    private float cameraX = 0.0f;
+    private float cameraY = 0.0f;
+    private float cameraZ = -7.0f;
+    private float cameraRotationX = 0.0f;
+    private float cameraRotationY = 0.0f;
 
-	// inicializacion de la ventana y objetos mediante metodos
-	public void run() {
-		System.out.println("¡LWJGL " + Version.getVersion() + " funcionando!"); // version del lwjgl
-		try {
-			init(); // metodo que se inicia una unica veez
-			loop(); // constante redibujado o blucle donde los objetos se dibujan una y otra vez
-		} finally { // liberacion de recursos
-			glfwFreeCallbacks(window); // liberar los recursos de la ventana que creeas
-			glfwDestroyWindow(window); // destruyes la ventana
-			glfwTerminate(); // terminar la libreria glfw para recuperar recursos
-			glfwSetErrorCallback(null).free(); // posibles errores que existan
-		}
-	}
+    public void run() {
+        // Imprimir versión de LWJGL
+        System.out.println("¡LWJGL " + Version.getVersion() + " funcionando!");
 
-	// inicializador de objetos
-	private void init() {
-		//// ************************** lineas de codigo para atrapar un error en caso
-		//// de que no se importe la libreri GLFW
-		GLFWErrorCallback.createPrint(System.err).set();
+        try {
+            // Inicializar y entrar en el bucle principal
+            init();
+            loop();
+        } finally {
+            // Liberar los recursos de GLFW
+            glfwFreeCallbacks(window);
+            glfwDestroyWindow(window);
+            glfwTerminate();
+            glfwSetErrorCallback(null).free();
+        }
+    }
 
-		if (!glfwInit()) {
-			throw new IllegalStateException("No se pudo inicializar GLFW");
-		}
-////**************************
-		glfwDefaultWindowHints();
-		glfwWindowHint(GLFW_VISIBLE, GLFW_FALSE);
-		glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE); // la ventana no puede ser modificada en tamaño, fija un solo tamaño
+    private void init() {
+        // Configurar la devolución de llamada de error
+        GLFWErrorCallback.createPrint(System.err).set();
 
-		window = glfwCreateWindow(800, 600, "Luces", NULL, NULL); // creacion de la ventana, la cual tiene 800pixeles de
-																	// ancho y 600 de alto
-		if (window == NULL) {
-			throw new RuntimeException("No se pudo crear la ventana de GLFW");
-		} // atrapa errores en caso de que no se pueda crear la ventana
+        // Inicializar GLFW
+        if (!glfwInit()) {
+            throw new IllegalStateException("No se pudo inicializar GLFW");
+        }
 
-		try (MemoryStack stack = stackPush()) {
-			IntBuffer pWidth = stack.mallocInt(1);
-			IntBuffer pHeight = stack.mallocInt(1);
+        // Configurar la ventana GLFW
+        glfwDefaultWindowHints();
+        glfwWindowHint(GLFW_VISIBLE, GLFW_FALSE); // La ventana será invisible al principio
+        glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE); // La ventana no será redimensionable
 
-			glfwGetWindowSize(window, pWidth, pHeight);
-			GLFWVidMode vidmode = glfwGetVideoMode(glfwGetPrimaryMonitor());
+        // Crear la ventana
+        window = glfwCreateWindow(800, 600, "Luces", NULL, NULL);
+        if (window == NULL) {
+            throw new RuntimeException("No se pudo crear la ventana de GLFW");
+        }
 
-			glfwSetWindowPos(window, (vidmode.width() - pWidth.get(0)) / 2, (vidmode.height() - pHeight.get(0)) / 2);
-		}
+        // Configurar la posición de la ventana centrada en el monitor
+        try (MemoryStack stack = stackPush()) {
+            IntBuffer pWidth = stack.mallocInt(1);
+            IntBuffer pHeight = stack.mallocInt(1);
 
-		glfwMakeContextCurrent(window);
-		glfwSwapInterval(1);
-		glfwShowWindow(window);
-		// creacion de la ventana+++++++++++++++++++++++++++++++++
-		// *******************************************************
+            glfwGetWindowSize(window, pWidth, pHeight);
+            GLFWVidMode vidmode = glfwGetVideoMode(glfwGetPrimaryMonitor());
 
-		// metodo para poder atrapar la lectura de teclado
-		// ver si una tecla es presionada
-		glfwSetKeyCallback(window, (window, key, scancode, action, mods) -> {
-			if (action == GLFW_PRESS || action == GLFW_REPEAT) {
-				switch (key) {
-				case GLFW_KEY_W -> cameraZ += 0.1f;
-				case GLFW_KEY_S -> cameraZ -= 0.1f;
-				case GLFW_KEY_A -> cameraRotationY -= 5.0f;
-				case GLFW_KEY_D -> cameraRotationY += 5.0f;
-				case GLFW_KEY_UP -> cameraRotationX -= 5.0f;
-				case GLFW_KEY_DOWN -> cameraRotationX += 5.0f;
-				}
-			}
-		});
-	}
+            glfwSetWindowPos(
+                window,
+                (vidmode.width() - pWidth.get(0)) / 2,
+                (vidmode.height() - pHeight.get(0)) / 2
+            );
+        }
 
-//***********************************************
-	// redibujar una y otra ves la pantalla y sus objetos
-	private void loop() {
-		GL.createCapabilities();
+        // Hacer el contexto OpenGL actual
+        glfwMakeContextCurrent(window);
+        // Habilitar v-sync
+        glfwSwapInterval(1);
+        // Hacer visible la ventana
+        glfwShowWindow(window);
 
-		glClearColor(0.0f, 0.0f, 0.0f, 0.0f); // metodo para limpiar la pantalla y asignarle un color
+        // Configurar la devolución de llamada del teclado
+        glfwSetKeyCallback(window, (window, key, scancode, action, mods) -> {
+            if (action == GLFW_PRESS || action == GLFW_REPEAT) {
+                switch (key) {
+                    case GLFW_KEY_W -> cameraZ += 0.1f;
+                    case GLFW_KEY_S -> cameraZ -= 0.1f;
+                    case GLFW_KEY_A -> cameraRotationY -= 5.0f;
+                    case GLFW_KEY_D -> cameraRotationY += 5.0f;
+                    case GLFW_KEY_UP -> cameraRotationX -= 5.0f;
+                    case GLFW_KEY_DOWN -> cameraRotationX += 5.0f;
+                }
+            }
+        });
+    }
 
-		glEnable(GL_DEPTH_TEST); // agrega profundidad a la ventana, tus objetos se posen ensima de la ventana y
-									// relleno de las figuras
+    private void loop() {
+        // Crear capacidades de OpenGL
+        GL.createCapabilities();
 
-		glMatrixMode(GL_PROJECTION); // visualicen los objetos
+        // Configurar el color de limpieza del búfer
+        glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
+        // Habilitar la prueba de profundidad
+        glEnable(GL_DEPTH_TEST);
 
-		glLoadIdentity(); // manejo de matrices interna
+        // Configurar la proyección
+        glMatrixMode(GL_PROJECTION);
+        glLoadIdentity();
+        float aspectRatio = (float) 800 / 600;
+        gluPerspective(45.0f, aspectRatio, 0.1f, 100.0f);
 
-		float aspectRatio = (float) 800 / 600;
+        // Cambiar a la matriz de modelo/vista
+        glMatrixMode(GL_MODELVIEW);
+        glLoadIdentity();
 
-		gluPerspective(45.0f, aspectRatio, 0.1f, 100.0f); // maneja perspectivas de camara
+        // Configurar la iluminación
+        setupLighting();
 
-		glMatrixMode(GL_MODELVIEW);
+        // Bucle principal de renderizado
+        while (!glfwWindowShouldClose(window)) {
+            // Limpiar el búfer de color y profundidad
+            glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-		glLoadIdentity();
+            // Reiniciar la matriz de modelo/vista
+            glLoadIdentity();
+            // Aplicar transformaciones de la cámara
+            glTranslatef(cameraX, cameraY, cameraZ);
+            glRotatef(cameraRotationX, 1.0f, 0.0f, 0.0f);
+            glRotatef(cameraRotationY, 0.0f, 1.0f, 0.0f);
 
-		setupLighting(); // configuracion de las luces del escenario metodo
+            // Dibujar la escena
+            drawScene();
 
-		// dibujar una y otra ves los objetos
-		while (!glfwWindowShouldClose(window)) {
-			glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+            // Intercambiar los búferes y procesar eventos
+            glfwSwapBuffers(window);
+            glfwPollEvents();
+        }
+    }
 
-			glLoadIdentity();
-			glTranslatef(cameraX, cameraY, cameraZ);
-			glRotatef(cameraRotationX, 1.0f, 0.0f, 0.0f);
-			glRotatef(cameraRotationY, 0.0f, 1.0f, 0.0f);
+    private void setupLighting() {
+        // Habilitar la iluminación y el material de color
+        glEnable(GL_LIGHTING);
+        glEnable(GL_COLOR_MATERIAL);
 
-			drawCubes(); // dibujar el cubo en la ventana una y otra vez
+        // Configurar la luz 0
+        glEnable(GL_LIGHT0);
+        float[] lightPos = {0.0f, 5.0f, -5.0f, 1.0f};
+        glLightfv(GL_LIGHT0, GL_POSITION, lightPos);
+        float[] ambientLight = {0.2f, 0.2f, 0.2f, 1.0f};
+        float[] diffuseLight = {0.8f, 0.8f, 0.8f, 1.0f};
+        glLightfv(GL_LIGHT0, GL_AMBIENT, ambientLight);
+        glLightfv(GL_LIGHT0, GL_DIFFUSE, diffuseLight);
+    }
 
-			glfwSwapBuffers(window); // metodo para anexar los objetos a la ventana
-			glfwPollEvents(); // manejo de eventos
-		}
-		//
-	}
+    private void drawScene() {
+        // Dibujar el plano y el cubo
+        drawPlane();
+        drawCube();
+    }
 
-	// metodo es para quitar toda la luz del escenario para poder colocar
-	// correctamente las luces
-	private void setupLighting() {
-		glEnable(GL_LIGHTING); // habilita luces
-		glEnable(GL_COLOR_MATERIAL); // habilita las luces sobre los objetos
+    private void drawPlane() {
+        // Dibujar un plano escalado para representar el suelo
+        glPushMatrix();
+        glTranslatef(0.0f, -1.0f, 0.0f);
+        glScalef(10.0f, 0.1f, 10.0f);
+        glColor3f(0.6f, 0.6f, 0.6f);
+        drawCube();
+        glPopMatrix();
+    }
 
-		// Luz ambiental global (opcional, para evitar que todo esté en oscuridad)
-		glLightfv(GL_LIGHT0, GL_AMBIENT, new float[] { 0.0f, 0.0f, 0.0f, 1.0f });
-		glLightfv(GL_LIGHT0, GL_DIFFUSE, new float[] { 0.0f, 0.0f, 0.0f, 1.0f });
-		glLightfv(GL_LIGHT0, GL_SPECULAR, new float[] { 0.0f, 0.0f, 0.0f, 1.0f });
-		glLightfv(GL_LIGHT0, GL_POSITION, new float[] { 0.0f, 0.0f, 0.0f, 1.0f });
-		glDisable(GL_LIGHT0); // Desactivamos la luz ambiental global
+    private void drawCube() {
+        // Dibujar un cubo con diferentes colores en cada cara
+        glBegin(GL_QUADS);
 
-		glColorMaterial(GL_FRONT, GL_AMBIENT_AND_DIFFUSE); // asigna una luz ambiental y difusa sobre el material del
-															// objeto
+        // Cara frontal
+        glColor3f(1.0f, 0.0f, 0.0f);
+        glVertex3f(-1.0f, -1.0f, 1.0f);
+        glVertex3f(1.0f, -1.0f, 1.0f);
+        glVertex3f(1.0f, 1.0f, 1.0f);
+        glVertex3f(-1.0f, 1.0f, 1.0f);
 
-	}
+        // Cara trasera
+        glVertex3f(-1.0f, -1.0f, -1.0f);
+        glVertex3f(-1.0f, 1.0f, -1.0f);
+        glVertex3f(1.0f, 1.0f, -1.0f);
+        glVertex3f(1.0f, -1.0f, -1.0f);
 
-	// dibujado del cubo y asignacion de las luces, modificar escalado
-	private void drawCubes() {
-		// Cubo con luz ambiental
-		glPushMatrix(); // guardar las cordenadas del cubo
-		glTranslatef(-2.5f, 0.0f, 0.0f); // Acercamos los cubos
-		glScalef(0.75f, 0.75f, 0.75f); // Hacemos el cubo un poco más grande
-		setupAmbientLight(); // asignar el tipo de luz que el objeto va a tener
-		drawCube();
-		glPopMatrix(); // cualquier transformacion hecha en la matriz de cordenadas son revertidas para
-						// dejar a la matriz en su estado original
+        // Cara superior
+        glVertex3f(-1.0f, 1.0f, -1.0f);
+        glVertex3f(-1.0f, 1.0f, 1.0f);
+        glVertex3f(1.0f, 1.0f, 1.0f);
+        glVertex3f(1.0f, 1.0f, -1.0f);
 
-		// Cubo con luz difusa
-		glPushMatrix();
-		glTranslatef(0.0f, 0.0f, 0.0f); // Posición central
-		glScalef(0.75f, 0.75f, 0.75f); // Hacemos el cubo un poco más grande
-		setupDiffuseLight(); // La luz difusa ilumina los objetos basándose en el ángulo de incidencia de la
-								// luz sobre las superficies.
-		drawCube();
-		glPopMatrix();
+        // Cara inferior
+        glVertex3f(-1.0f, -1.0f, -1.0f);
+        glVertex3f(1.0f, -1.0f, -1.0f);
+        glVertex3f(1.0f, -1.0f, 1.0f);
+        glVertex3f(-1.0f, -1.0f, 1.0f);
 
-		// Cubo con luz especular
-		glPushMatrix();
-		glTranslatef(2.5f, 0.0f, 0.0f); // Acercamos los cubos
-		glScalef(0.75f, 0.75f, 0.75f); // Hacemos el cubo un poco más grande
-		setupSpecularLight();// La luz especular crea reflejos brillantes en la superficie basada en el
-								// ángulo de reflexión.
-		drawCube();
-		glPopMatrix();
-	}
+        // Cara derecha
+        glVertex3f(1.0f, -1.0f, -1.0f);
+        glVertex3f(1.0f, 1.0f, -1.0f);
+        glVertex3f(1.0f, 1.0f, 1.0f);
+        glVertex3f(1.0f, -1.0f, 1.0f);
 
-	// configuracion de la luz ambiental en tono bajo
-	private void setupAmbientLight() {
-		glEnable(GL_LIGHT0); // inicializado de una luz
-		float[] ambientLight = { 0.2f, 0.2f, 0.2f, 1.0f }; // parametros de intensidad de la luz
-		glLightfv(GL_LIGHT0, GL_AMBIENT, ambientLight); // meetodo para definir tipo de luz
-	}
+        // Cara izquierda
+        glVertex3f(-1.0f, -1.0f, -1.0f);
+        glVertex3f(-1.0f, -1.0f, 1.0f);
+        glVertex3f(-1.0f, 1.0f, 1.0f);
+        glVertex3f(-1.0f, 1.0f, -1.0f);
 
-	private void setupDiffuseLight() {
-		glEnable(GL_LIGHT1);
-		float[] diffuseLight = { 0.8f, 0.8f, 0.8f, 1.0f };
-		glLightfv(GL_LIGHT1, GL_DIFFUSE, diffuseLight);
-		glLightfv(GL_LIGHT1, GL_POSITION, new float[] { 0.0f, 1.5f, 1.0f, 1.0f }); // posiscion de la luz
-	}
+        glEnd();
+    }
 
-	private void setupSpecularLight() {
-		glEnable(GL_LIGHT2);
-		float[] specularLight = { 1.0f, 1.0f, 1.0f, 1.0f };
-		glLightfv(GL_LIGHT2, GL_SPECULAR, specularLight);
-		glLightfv(GL_LIGHT2, GL_POSITION, new float[] { 2.5f, 1.5f, 1.0f, 1.0f }); // posiscion de la luz
-	}
-
-	// dibujar el cubo mediante triangulacion
-	private void drawCube() {
-		glBegin(GL_QUADS); // define que se va a dibujar un cuadrado
-
-		// delantera del cubo
-		glColor3f(1.0f, 0.0f, 0.0f); // color del cubo Rojo
-		glVertex3f(-1.0f, -1.0f, 1.0f);
-		glVertex3f(1.0f, -1.0f, 1.0f);
-		glVertex3f(1.0f, 1.0f, 1.0f);
-		glVertex3f(-1.0f, 1.0f, 1.0f);
-
-		// Back face
-		glVertex3f(-1.0f, -1.0f, -1.0f);
-		glVertex3f(-1.0f, 1.0f, -1.0f);
-		glVertex3f(1.0f, 1.0f, -1.0f);
-		glVertex3f(1.0f, -1.0f, -1.0f);
-
-		// Top face
-		glVertex3f(-1.0f, 1.0f, -1.0f);
-		glVertex3f(-1.0f, 1.0f, 1.0f);
-		glVertex3f(1.0f, 1.0f, 1.0f);
-		glVertex3f(1.0f, 1.0f, -1.0f);
-
-		// Bottom face
-		glVertex3f(-1.0f, -1.0f, -1.0f);
-		glVertex3f(1.0f, -1.0f, -1.0f);
-		glVertex3f(1.0f, -1.0f, 1.0f);
-		glVertex3f(-1.0f, -1.0f, 1.0f);
-
-		// Right face
-		glVertex3f(1.0f, -1.0f, -1.0f);
-		glVertex3f(1.0f, 1.0f, -1.0f);
-		glVertex3f(1.0f, 1.0f, 1.0f);
-		glVertex3f(1.0f, -1.0f, 1.0f);
-
-		// Left face
-		glVertex3f(-1.0f, -1.0f, -1.0f);
-		glVertex3f(-1.0f, -1.0f, 1.0f);
-		glVertex3f(-1.0f, 1.0f, 1.0f);
-		glVertex3f(-1.0f, 1.0f, -1.0f);
-
-		glEnd(); // termina el proceso de dibujado
-	}
-
-	private void gluPerspective(float fov, float aspectRatio, float zNear, float zFar) {
-		float ymax, xmax;
-		ymax = (float) (zNear * Math.tan(Math.toRadians(fov / 2)));
-		xmax = ymax * aspectRatio;
-		glFrustum(-xmax, xmax, -ymax, ymax, zNear, zFar);
-	}
-}// FINAL CLASS
+    private void gluPerspective(float fov, float aspectRatio, float zNear, float zFar) {
+        // Implementar la perspectiva con gluPerspective
+        float ymax, xmax;
+        ymax = (float) (zNear * Math.tan(Math.toRadians(fov / 2)));
+        xmax = ymax * aspectRatio;
+        glFrustum(-xmax, xmax, -ymax, ymax, zNear, zFar);
+    }
+}
